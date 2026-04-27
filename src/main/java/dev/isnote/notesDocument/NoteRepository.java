@@ -16,4 +16,6 @@ public interface NoteRepository extends JpaRepository<Note, UUID> {
     Optional<Note> findByIdAndOwnerIdAndDeletedAtIsNull(UUID noteId, UUID ownerId);
 
     Optional<Note> findByIdAndOwnerId (UUID noteId, UUID ownerId);
+
+    Optional<Note> findByIdAndOwnerIdAndDeletedAtIsNotNull (UUID noteId, UUID ownerId);
 }

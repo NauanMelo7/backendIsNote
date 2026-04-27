@@ -64,4 +64,11 @@ public class NoteController {
 
         return ResponseEntity.status(HttpStatus.OK).body(notes);
     }
+
+    @PostMapping("/notes/{id}/restore")
+    public ResponseEntity<NoteResponseDTO> restoreNote(@AuthenticationPrincipal User user, @PathVariable UUID id){
+        NoteResponseDTO noteResponseDTO = this.noteService.restaureNoteTrash(user, id);
+
+        return ResponseEntity.status(HttpStatus.OK).body(noteResponseDTO);
+    }
 }

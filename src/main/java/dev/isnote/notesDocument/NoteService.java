@@ -102,6 +102,17 @@ public class NoteService {
 
     }
 
+    public NoteResponseDTO restaureNoteTrash(User authenticatedUser, UUID noteId){
+        Note note = this.noteRepository.findByIdAndOwnerIdAndDeletedAtIsNotNull(noteId, authenticatedUser.getId())
+            .orElseThrow(() -> new BusinessException("Note not found", HttpStatus.NOT_FOUND));
+
+        note.setDeletedAt(null);
+
+        this.noteRepository.save(note);
+
+        return mapResponse(note);
+    }
+
     public NoteResponseDTO mapResponse(Note note) {
        return new NoteResponseDTO(
             note.getId(),
