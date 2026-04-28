@@ -72,17 +72,7 @@ public class NoteService {
         Note note = this.noteRepository.findByIdAndOwnerId(noteId, authenticatedUser.getId())
             .orElseThrow(() -> new BusinessException("Note note found", HttpStatus.NOT_FOUND));
 
-        return new NoteDocumentResponseDTO(
-            note.getId(),
-            note.getEncryptedPayload(),
-            note.getContentNonce(),
-            note.getEncryptionVersion(),
-            note.getShareVisibility(),
-            note.getShareId(),
-            note.getCreatedAt(),
-            note.getUpdatedAt(),
-            note.getVersion()
-        );
+        return mapNoteDocumentResponse(note);
 
     }
 
@@ -113,12 +103,30 @@ public class NoteService {
         return mapResponse(note);
     }
 
-    public void deletNote (User authenticatedUser, UUID noteId){
+    public void deleteNote (User authenticatedUser, UUID noteId){
 
         Note note = this.noteRepository.findByIdAndOwnerIdAndDeletedAtIsNotNull(noteId, authenticatedUser.getId())
             .orElseThrow(() -> new BusinessException("Note not found or not in trash", HttpStatus.NOT_FOUND));
 
         this.noteRepository.delete(note);
+
+    }
+
+    public NoteDocumentResponseDTO updateShare(User authenticatedUser, UUID noteId, UpdateShareRequestDTO shareVisibility){
+
+        Note note = this.noteRepository.findByIdAndOwnerIdAndDeletedAtIsNull(noteId, authenticatedUser.getId())
+            .orElseThrow(() ->  new BusinessException("Note not found or in trash", HttpStatus.NOT_FOUND));
+
+        note.setShareVisibility(shareVisibility.shareVisibility());
+        if(shareVisibility.shareVisibility() == NoteShareVisibility.ANON_LINK) {
+            note.setShareId(UUID.randomUUID());
+        } else if(shareVisibility.shareVisibility() == NoteShareVisibility.PRIVATE || shareVisibility.shareVisibility() == NoteShareVisibility.ACCOUNT_ONLY) {
+            note.setShareId(null);
+        }
+
+        this.noteRepository.save(note);
+
+        return mapNoteDocumentResponse(note);
 
     }
 
@@ -134,6 +142,21 @@ public class NoteService {
             note.getVersion()
         );
 
+    }
+
+    public NoteDocumentResponseDTO mapNoteDocumentResponse(Note note) {
+
+        return new NoteDocumentResponseDTO(
+            note.getId(),
+            note.getEncryptedPayload(),
+            note.getContentNonce(),
+            note.getEncryptionVersion(),
+            note.getShareVisibility(),
+            note.getShareId(),
+            note.getCreatedAt(),
+            note.getUpdatedAt(),
+            note.getVersion()
+        );
     }
 
     public List<NoteResponseDTO> mapListResponse(List<Note> notes){

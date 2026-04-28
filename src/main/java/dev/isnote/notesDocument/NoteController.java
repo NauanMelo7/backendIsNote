@@ -74,8 +74,15 @@ public class NoteController {
 
     @DeleteMapping("/notes/{id}/permanent")
     public ResponseEntity deleteNote(@AuthenticationPrincipal User user, @PathVariable UUID id){
-        this.noteService.deletNote(user, id);
+        this.noteService.deleteNote(user, id);
 
         return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PatchMapping("/notes/{id}/share")
+    public ResponseEntity<NoteDocumentResponseDTO> updateShare(@AuthenticationPrincipal User user, @PathVariable UUID id, @RequestBody UpdateShareRequestDTO shareVisibility) {
+        NoteDocumentResponseDTO note = this.noteService.updateShare(user, id, shareVisibility);
+
+        return ResponseEntity.status(HttpStatus.OK).body(note);
     }
 }
