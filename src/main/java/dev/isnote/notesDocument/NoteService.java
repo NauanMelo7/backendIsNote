@@ -113,6 +113,17 @@ public class NoteService {
         return mapResponse(note);
     }
 
+    public void deletNote (User authenticatedUser, UUID noteId){
+
+        Note note = this.noteRepository.findByIdAndOwnerIdAndDeletedAtIsNotNull(noteId, authenticatedUser.getId())
+            .orElseThrow(() -> new BusinessException("Note not found or not in trash", HttpStatus.NOT_FOUND));
+
+        this.noteRepository.delete(note);
+
+    }
+
+
+
     public NoteResponseDTO mapResponse(Note note) {
        return new NoteResponseDTO(
             note.getId(),

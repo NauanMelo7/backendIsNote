@@ -71,4 +71,11 @@ public class NoteController {
 
         return ResponseEntity.status(HttpStatus.OK).body(noteResponseDTO);
     }
+
+    @DeleteMapping("/notes/{id}/permanent")
+    public ResponseEntity deleteNote(@AuthenticationPrincipal User user, @PathVariable UUID id){
+        this.noteService.deletNote(user, id);
+
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
 }
