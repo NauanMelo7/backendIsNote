@@ -12,6 +12,7 @@ public record NoteDocumentResponseDTO(
     UUID shareId,
     Instant createdAt,
     Instant updatedAt,
-    long version
+    Instant deletedAt,
+    Integer version
 ) {
 }

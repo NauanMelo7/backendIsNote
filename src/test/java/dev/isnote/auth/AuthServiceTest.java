@@ -51,14 +51,14 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = new User("Nauan", "nauan@isnote.dev", "encoded-password", RoleUser.USER);
+        user = new User("Nauan", "nauan@isnote.app", "encoded-password", RoleUser.USER);
         user.setId(UUID.randomUUID());
     }
 
     @Test
     void shouldRegisterNewUserAndReturnTokens() {
-        AuthRegisterDTO request = new AuthRegisterDTO("Nauan", "NAUAN@isnote.dev", "12345678");
-        when(userRepository.existsByEmailIgnoreCase("nauan@isnote.dev")).thenReturn(false);
+        AuthRegisterDTO request = new AuthRegisterDTO("Nauan", "NAUAN@isnote.app", "12345678");
+        when(userRepository.existsByEmailIgnoreCase("nauan@isnote.app")).thenReturn(false);
         when(passwordEncoder.encode("12345678")).thenReturn("encoded-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User saved = invocation.getArgument(0);
@@ -83,18 +83,18 @@ class AuthServiceTest {
         ArgumentCaptor<AuthSession> sessionCaptor = ArgumentCaptor.forClass(AuthSession.class);
         org.mockito.Mockito.verify(userRepository).save(userCaptor.capture());
         verify(authSessionRepository).save(sessionCaptor.capture());
-        assertThat(userCaptor.getValue().getEmail()).isEqualTo("nauan@isnote.dev");
+        assertThat(userCaptor.getValue().getEmail()).isEqualTo("nauan@isnote.app");
         assertThat(sessionCaptor.getValue().getId()).isNotNull();
         assertThat(sessionCaptor.getValue().getRefreshTokenHash()).isNotBlank();
         assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
-        assertThat(response.user().email()).isEqualTo("nauan@isnote.dev");
+        assertThat(response.user().email()).isEqualTo("nauan@isnote.app");
     }
 
     @Test
     void shouldRejectInvalidCredentialsOnLogin() {
-        AuthLoginDTO request = new AuthLoginDTO("nauan@isnote.dev", "wrong-password");
-        when(userRepository.findByEmailIgnoreCase("nauan@isnote.dev")).thenReturn(Optional.of(user));
+        AuthLoginDTO request = new AuthLoginDTO("nauan@isnote.app", "wrong-password");
+        when(userRepository.findByEmailIgnoreCase("nauan@isnote.app")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrong-password", "encoded-password")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.login(request))

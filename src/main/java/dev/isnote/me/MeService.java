@@ -2,6 +2,7 @@ package dev.isnote.me;
 
 import dev.isnote.auth.AuthService;
 import dev.isnote.auth.AuthTokenResponseDTO;
+import dev.isnote.contentkey.ContentKeyService;
 import dev.isnote.exception.BusinessException;
 import dev.isnote.user.User;
 import dev.isnote.user.UserRepository;
@@ -19,11 +20,18 @@ public class MeService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+    private final ContentKeyService contentKeyService;
 
-    public MeService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthService authService) {
+    public MeService(
+        UserRepository userRepository,
+        PasswordEncoder passwordEncoder,
+        AuthService authService,
+        ContentKeyService contentKeyService
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authService = authService;
+        this.contentKeyService = contentKeyService;
     }
 
     @Transactional(Transactional.TxType.SUPPORTS)
@@ -50,6 +58,13 @@ public class MeService {
     public AuthTokenResponseDTO changePassword(User authenticatedUser, ChangePasswordDTO body) {
         User user = loadActiveUser(authenticatedUser);
 
+        if (contentKeyService.existsForUser(user) && body.contentKey() == null) {
+            throw new BusinessException(
+                "Wrapped content key must be updated when changing the password.",
+                HttpStatus.BAD_REQUEST
+            );
+        }
+
         if (!passwordEncoder.matches(body.currentPassword(), user.getPassword())) {
             throw new BusinessException("Current password is incorrect.", HttpStatus.BAD_REQUEST);
         }
@@ -60,6 +75,10 @@ public class MeService {
 
         user.setPasswordHash(passwordEncoder.encode(body.newPassword()));
         User savedUser = userRepository.save(user);
+
+        if (body.contentKey() != null) {
+            contentKeyService.upsertForLoadedUser(savedUser, body.contentKey());
+        }
 
         authService.revokeActiveSessions(savedUser.getId());
         return authService.issueTokensFor(savedUser);

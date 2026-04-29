@@ -22,23 +22,23 @@ public class NoteController {
     }
 
     @PostMapping("/notes")
-    public ResponseEntity<NoteResponseDTO> create(@AuthenticationPrincipal User user, @Valid @RequestBody CreateNoteRequestDTO createNote) {
+    public ResponseEntity<NoteDocumentResponseDTO> create(@AuthenticationPrincipal User user, @Valid @RequestBody CreateNoteRequestDTO createNote) {
 
-        NoteResponseDTO newNote = this.noteService.createNote(user, createNote);
+        NoteDocumentResponseDTO newNote = this.noteService.createNote(user, createNote);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(newNote);
     }
 
     @PatchMapping("/notes/{id}")
-    public ResponseEntity<NoteResponseDTO> update(@PathVariable UUID id, @AuthenticationPrincipal User user, @RequestBody UpdateNoteRequestDTO updateNote) {
-        NoteResponseDTO note = this.noteService.updateNote(user, updateNote, id);
+    public ResponseEntity<NoteDocumentResponseDTO> update(@PathVariable UUID id, @AuthenticationPrincipal User user, @Valid @RequestBody UpdateNoteRequestDTO updateNote) {
+        NoteDocumentResponseDTO note = this.noteService.updateNote(user, updateNote, id);
 
         return ResponseEntity.status(HttpStatus.OK).body(note);
     }
 
     @GetMapping("/notes")
-    public ResponseEntity<List<NoteResponseDTO>> findAllNotes(@AuthenticationPrincipal User user) {
-         List<NoteResponseDTO> findAllNotes = this.noteService.findAllNote(user);
+    public ResponseEntity<List<NoteDocumentResponseDTO>> findAllNotes(@AuthenticationPrincipal User user) {
+         List<NoteDocumentResponseDTO> findAllNotes = this.noteService.findAllNote(user);
 
          return ResponseEntity.status(HttpStatus.OK).body(findAllNotes);
     }
@@ -51,36 +51,36 @@ public class NoteController {
     }
 
     @DeleteMapping("/notes/{id}")
-    public ResponseEntity trashNote(@AuthenticationPrincipal User user, @PathVariable UUID id){
+    public ResponseEntity<Void> trashNote(@AuthenticationPrincipal User user, @PathVariable UUID id){
         this.noteService.trashNote(user, id);
 
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @GetMapping("/notes/trash")
-    public ResponseEntity listAllTrashNotes(@AuthenticationPrincipal User user){
+    public ResponseEntity<List<NoteDocumentResponseDTO>> listAllTrashNotes(@AuthenticationPrincipal User user){
 
-        List<NoteResponseDTO> notes = this.noteService.listAllTrash(user);
+        List<NoteDocumentResponseDTO> notes = this.noteService.listAllTrash(user);
 
         return ResponseEntity.status(HttpStatus.OK).body(notes);
     }
 
     @PostMapping("/notes/{id}/restore")
-    public ResponseEntity<NoteResponseDTO> restoreNote(@AuthenticationPrincipal User user, @PathVariable UUID id){
-        NoteResponseDTO noteResponseDTO = this.noteService.restaureNoteTrash(user, id);
+    public ResponseEntity<NoteDocumentResponseDTO> restoreNote(@AuthenticationPrincipal User user, @PathVariable UUID id){
+        NoteDocumentResponseDTO noteResponseDTO = this.noteService.restaureNoteTrash(user, id);
 
         return ResponseEntity.status(HttpStatus.OK).body(noteResponseDTO);
     }
 
     @DeleteMapping("/notes/{id}/permanent")
-    public ResponseEntity deleteNote(@AuthenticationPrincipal User user, @PathVariable UUID id){
+    public ResponseEntity<Void> deleteNote(@AuthenticationPrincipal User user, @PathVariable UUID id){
         this.noteService.deleteNote(user, id);
 
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @PatchMapping("/notes/{id}/share")
-    public ResponseEntity<NoteDocumentResponseDTO> updateShare(@AuthenticationPrincipal User user, @PathVariable UUID id, @RequestBody UpdateShareRequestDTO shareVisibility) {
+    public ResponseEntity<NoteDocumentResponseDTO> updateShare(@AuthenticationPrincipal User user, @PathVariable UUID id, @Valid @RequestBody UpdateShareRequestDTO shareVisibility) {
         NoteDocumentResponseDTO note = this.noteService.updateShare(user, id, shareVisibility);
 
         return ResponseEntity.status(HttpStatus.OK).body(note);

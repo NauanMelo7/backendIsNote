@@ -2,11 +2,12 @@ package dev.isnote.notesDocument;
 
 import dev.isnote.exception.BusinessException;
 import dev.isnote.user.User;
+import dev.isnote.user.UserRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,15 +15,20 @@ import java.util.UUID;
 public class NoteService {
 
     private final NoteRepository noteRepository;
+    private final UserRepository userRepository;
 
-    public NoteService(NoteRepository noteRepository) {
+    public NoteService(NoteRepository noteRepository, UserRepository userRepository) {
         this.noteRepository = noteRepository;
+        this.userRepository = userRepository;
     }
 
-    public NoteResponseDTO createNote(User authenticatedUser, CreateNoteRequestDTO body) {
+    public NoteDocumentResponseDTO createNote(User authenticatedUser, CreateNoteRequestDTO body) {
+
+        User findUser = this.userRepository.findById(authenticatedUser.getId())
+            .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
 
         Note note = new Note();
-        note.setOwner(authenticatedUser);
+        note.setOwner(findUser);
         note.setEncryptedPayload(body.encryptedPayload());
         note.setContentNonce(body.contentNonce());
         note.setEncryptionVersion((body.encryptionVersion()));
@@ -34,33 +40,36 @@ public class NoteService {
 
         Note saved = this.noteRepository.save(note);
 
-        return mapResponse(saved);
+        return mapNoteDocumentResponse(saved);
     }
 
-    public NoteResponseDTO updateNote(User authenticatedUser, UpdateNoteRequestDTO body, UUID noteId) {
+    public NoteDocumentResponseDTO updateNote(User authenticatedUser, UpdateNoteRequestDTO body, UUID noteId) {
 
-        Note note = this.noteRepository.findById(noteId)
+        Note note = this.noteRepository.findByIdAndOwnerIdAndDeletedAtIsNull(noteId, authenticatedUser.getId())
             .orElseThrow(() -> new BusinessException("Note not found", HttpStatus.NOT_FOUND));
 
+        if(!note.getVersion().equals(body.version())){
+            throw new BusinessException("Note was updated by another user", HttpStatus.CONFLICT);
+        }
 
-        note.setOwner(authenticatedUser);
         note.setEncryptedPayload(body.encryptedPayload());
         note.setContentNonce(body.contentNonce());
         note.setEncryptionVersion(body.encryptionVersion());
         note.setShareVisibility(body.shareVisibility());
-        note.setVersion(body.version());
 
-        if(body.shareVisibility() == NoteShareVisibility.ANON_LINK){
+        if(body.shareVisibility() == NoteShareVisibility.ANON_LINK && note.getShareId() == null){
             note.setShareId(UUID.randomUUID());
         }
 
-        Note saved = this.noteRepository.save(note);
-
-        return mapResponse(saved);
+        try {
+            return mapNoteDocumentResponse(this.noteRepository.save(note));
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new BusinessException("Note was updated by another user", HttpStatus.CONFLICT);
+        }
 
     }
 
-    public List<NoteResponseDTO> findAllNote(User authenticatedUser) {
+    public List<NoteDocumentResponseDTO> findAllNote(User authenticatedUser) {
         List<Note> allNote = this.noteRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByUpdatedAtDesc(authenticatedUser.getId());
 
         return mapListResponse(allNote);
@@ -69,7 +78,7 @@ public class NoteService {
 
     public NoteDocumentResponseDTO finNoteDocumentNote(User authenticatedUser, UUID noteId){
 
-        Note note = this.noteRepository.findByIdAndOwnerId(noteId, authenticatedUser.getId())
+        Note note = this.noteRepository.findByIdAndOwnerIdAndDeletedAtIsNull(noteId, authenticatedUser.getId())
             .orElseThrow(() -> new BusinessException("Note note found", HttpStatus.NOT_FOUND));
 
         return mapNoteDocumentResponse(note);
@@ -84,23 +93,21 @@ public class NoteService {
         this.noteRepository.save(note);
     }
 
-    public List<NoteResponseDTO> listAllTrash(User authenticatedUser) {
+    public List<NoteDocumentResponseDTO> listAllTrash(User authenticatedUser) {
         List<Note> findAllNote = this.noteRepository.findAllByOwnerIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(authenticatedUser.getId());
 
         return mapListResponse(findAllNote);
-
-
     }
 
-    public NoteResponseDTO restaureNoteTrash(User authenticatedUser, UUID noteId){
+    public NoteDocumentResponseDTO restaureNoteTrash(User authenticatedUser, UUID noteId){
         Note note = this.noteRepository.findByIdAndOwnerIdAndDeletedAtIsNotNull(noteId, authenticatedUser.getId())
             .orElseThrow(() -> new BusinessException("Note not found", HttpStatus.NOT_FOUND));
 
         note.setDeletedAt(null);
 
-        this.noteRepository.save(note);
+        Note restored = this.noteRepository.save(note);
 
-        return mapResponse(note);
+        return mapNoteDocumentResponse(restored);
     }
 
     public void deleteNote (User authenticatedUser, UUID noteId){
@@ -118,10 +125,8 @@ public class NoteService {
             .orElseThrow(() ->  new BusinessException("Note not found or in trash", HttpStatus.NOT_FOUND));
 
         note.setShareVisibility(shareVisibility.shareVisibility());
-        if(shareVisibility.shareVisibility() == NoteShareVisibility.ANON_LINK) {
+        if(shareVisibility.shareVisibility() == NoteShareVisibility.ANON_LINK && note.getShareId() == null) {
             note.setShareId(UUID.randomUUID());
-        } else if(shareVisibility.shareVisibility() == NoteShareVisibility.PRIVATE || shareVisibility.shareVisibility() == NoteShareVisibility.ACCOUNT_ONLY) {
-            note.setShareId(null);
         }
 
         this.noteRepository.save(note);
@@ -129,21 +134,6 @@ public class NoteService {
         return mapNoteDocumentResponse(note);
 
     }
-
-
-
-    public NoteResponseDTO mapResponse(Note note) {
-       return new NoteResponseDTO(
-            note.getId(),
-            note.getShareVisibility(),
-            note.getShareId(),
-            note.getCreatedAt(),
-            note.getUpdatedAt(),
-            note.getVersion()
-        );
-
-    }
-
     public NoteDocumentResponseDTO mapNoteDocumentResponse(Note note) {
 
         return new NoteDocumentResponseDTO(
@@ -155,29 +145,15 @@ public class NoteService {
             note.getShareId(),
             note.getCreatedAt(),
             note.getUpdatedAt(),
+            note.getDeletedAt(),
             note.getVersion()
         );
     }
 
-    public List<NoteResponseDTO> mapListResponse(List<Note> notes){
-
-        List<NoteResponseDTO> listNoteDTO = new ArrayList<>();
-
-        for(Note listNote : notes) {
-
-            NoteResponseDTO noteResponse = new NoteResponseDTO(
-                listNote.getId(),
-                listNote.getShareVisibility(),
-                listNote.getShareId(),
-                listNote.getCreatedAt(),
-                listNote.getUpdatedAt(),
-                listNote.getVersion()
-            );
-
-            listNoteDTO.add(noteResponse);
-        }
-
-        return listNoteDTO;
+    public List<NoteDocumentResponseDTO> mapListResponse(List<Note> notes){
+        return notes.stream()
+            .map(this::mapNoteDocumentResponse)
+            .toList();
     }
 
 }

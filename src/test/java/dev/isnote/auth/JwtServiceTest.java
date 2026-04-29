@@ -24,7 +24,7 @@ class JwtServiceTest {
 
     @Test
     void shouldGenerateAndParseAccessToken() {
-        User user = new User("Nauan", "nauan@isnote.dev", "encoded", RoleUser.USER);
+        User user = new User("Nauan", "nauan@isnote.app", "encoded", RoleUser.USER);
         user.setId(UUID.randomUUID());
 
         String token = jwtService.generateAccessToken(user);
@@ -37,7 +37,7 @@ class JwtServiceTest {
 
     @Test
     void shouldGenerateAndParseRefreshToken() {
-        User user = new User("Nauan", "nauan@isnote.dev", "encoded", RoleUser.USER);
+        User user = new User("Nauan", "nauan@isnote.app", "encoded", RoleUser.USER);
         user.setId(UUID.randomUUID());
         UUID sessionId = UUID.randomUUID();
 
@@ -50,7 +50,7 @@ class JwtServiceTest {
 
     @Test
     void shouldRejectWrongTokenType() {
-        User user = new User("Nauan", "nauan@isnote.dev", "encoded", RoleUser.USER);
+        User user = new User("Nauan", "nauan@isnote.app", "encoded", RoleUser.USER);
         user.setId(UUID.randomUUID());
 
         String token = jwtService.generateAccessToken(user);
