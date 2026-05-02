@@ -1,4 +1,4 @@
-package workspace.assignment;
+package dev.isnote.workspace.assignment;
 
 import dev.isnote.user.User;
 import jakarta.persistence.*;
@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import workspace.folder.Folder;
+import dev.isnote.workspace.folder.Folder;
 
 import java.time.Instant;
 import java.util.UUID;

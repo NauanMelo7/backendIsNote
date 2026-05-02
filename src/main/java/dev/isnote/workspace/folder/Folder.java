@@ -1,4 +1,4 @@
-package workspace.folder;
+package dev.isnote.workspace.folder;
 
 import dev.isnote.user.User;
 import jakarta.persistence.*;
@@ -28,7 +28,7 @@ public class Folder {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_folder_id")
-    private Folder parent;
+    private Folder folderParent;
 
     @Column(name = "encrypted_payload", nullable = false)
     private byte[] encryptedPayload;
