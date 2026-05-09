@@ -4,6 +4,8 @@ import dev.isnote.notesDocument.NoteRepository;
 import dev.isnote.notesDocument.NoteService;
 import dev.isnote.user.RoleUser;
 import dev.isnote.user.User;
+import dev.isnote.user.UserRepository;
+import dev.isnote.workspace.assignment.AssignmentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +19,12 @@ public class NoteServiceTest {
 
     @Mock
     private NoteRepository noteRepository;
+
+    @Mock
+    private AssignmentRepository assignmentRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private NoteService noteService;

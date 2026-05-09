@@ -3,6 +3,8 @@ package dev.isnote.notesDocument;
 import dev.isnote.exception.BusinessException;
 import dev.isnote.user.User;
 import dev.isnote.user.UserRepository;
+import dev.isnote.workspace.assignment.AssignmentRepository;
+import dev.isnote.workspace.assignment.ItemType;
 import org.springframework.http.HttpStatus;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -16,10 +18,16 @@ public class NoteService {
 
     private final NoteRepository noteRepository;
     private final UserRepository userRepository;
+    private final AssignmentRepository assignmentRepository;
 
-    public NoteService(NoteRepository noteRepository, UserRepository userRepository) {
+    public NoteService(
+        NoteRepository noteRepository,
+        UserRepository userRepository,
+        AssignmentRepository assignmentRepository
+    ) {
         this.noteRepository = noteRepository;
         this.userRepository = userRepository;
+        this.assignmentRepository = assignmentRepository;
     }
 
     public NoteDocumentResponseDTO createNote(User authenticatedUser, CreateNoteRequestDTO body) {
@@ -115,6 +123,11 @@ public class NoteService {
         Note note = this.noteRepository.findByIdAndOwnerIdAndDeletedAtIsNotNull(noteId, authenticatedUser.getId())
             .orElseThrow(() -> new BusinessException("Note not found or not in trash", HttpStatus.NOT_FOUND));
 
+        this.assignmentRepository.deleteByOwner_IdAndItemTypeAndItemId(
+            authenticatedUser.getId(),
+            ItemType.NOTE,
+            noteId
+        );
         this.noteRepository.delete(note);
 
     }

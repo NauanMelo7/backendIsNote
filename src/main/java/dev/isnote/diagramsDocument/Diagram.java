@@ -1,4 +1,4 @@
-package dev.isnote.workspace.folder;
+package dev.isnote.diagramsDocument;
 
 import dev.isnote.user.User;
 import jakarta.persistence.*;
@@ -11,12 +11,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "workspace_folder")
+@Table(name = "diagrams_document")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Folder {
+public class Diagram {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -26,18 +26,21 @@ public class Folder {
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_folder_id")
-    private Folder folderParent;
-
     @Column(name = "encrypted_payload", nullable = false)
     private byte[] encryptedPayload;
 
-    @Column(name = "content_nonce", length = 250, nullable = false)
+    @Column(name = "content_nonce", nullable = false, length = 250)
     private String contentNonce;
 
-    @Column(name = "encryption_version", length = 100, nullable = false)
+    @Column(name = "encryption_version", nullable = false, length = 50)
     private String encryptionVersion;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "share_visibility", nullable = false, length = 50)
+    private DiagramShareVisibility shareVisibility;
+
+    @Column(name = "share_id")
+    private UUID shareId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -63,5 +66,4 @@ public class Folder {
     void onUpdate() {
         this.updatedAt = Instant.now();
     }
-
 }
